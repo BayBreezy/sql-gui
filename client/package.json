@@ -4,6 +4,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "clean": "rm -rf .nuxt node_modules package-lock.json && npm i",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -12,11 +13,11 @@
     "@iconify/vue": "^4.1.1",
     "@nuxtjs/google-fonts": "^3.0.0",
     "@types/node": "^18.15.11",
-    "nuxt": "^3.3.3",
+    "nuxt": "^3.4.0",
     "sass": "^1.61.0"
   },
   "dependencies": {
-    "@davestewart/nuxt-scrollbar": "^0.1.2",
+    "@davestewart/nuxt-scrollbar": "^1.0.0",
     "connection-string": "^4.3.6",
     "vee-validate": "^4.8.4",
     "vite-plugin-vuetify": "^1.0.2",

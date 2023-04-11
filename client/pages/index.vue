@@ -69,9 +69,10 @@
 
       // redirect to page with dbs
       useRouter().push("/dbs");
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
       useClearConnections();
+      useToast().error(error.message);
     } finally {
       loading.value = false;
     }
