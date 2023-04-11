@@ -77,6 +77,13 @@
       loading.value = false;
     }
   };
+
+  onMounted(() => {
+    const connectionData = useGetConnections();
+    if (connectionData && connectionData.client) {
+      useRouter().push("/dbs");
+    }
+  });
 </script>
 
 <style scoped></style>
