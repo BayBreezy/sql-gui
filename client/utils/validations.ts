@@ -10,3 +10,9 @@ export const ConnectSchema = object({
   user: string(),
   password: string(),
 });
+
+export const CreateDbSchema = object({
+  name: string()
+    .required("Database name is required")
+    .min(3, "Database name must be at least 3 characters"),
+});

@@ -5,17 +5,31 @@
       <VList v-model:selected="selectedDB" v-if="!pending">
         <VListSubheader>Databases</VListSubheader>
 
-        <VListItem :value="db" @click="loadTables(db)" link v-for="db in databases" :key="db">
+        <VListItem :value="db" link v-for="db in databases" :key="db">
           <template #prepend>
-            <VIcon class="mr-4" size="20">fluent:database-24-regular</VIcon>
+            <VIcon @click="loadTables(db)" class="mr-4" size="20">fluent:database-24-regular</VIcon>
           </template>
-          <VListItemTitle class="text-body-2">{{ db }}</VListItemTitle>
+          <template #append>
+            <VBtn @click="deleteDb(db)" flat size="x-small" icon
+              ><VIcon>fluent:delete-24-regular</VIcon></VBtn
+            >
+          </template>
+          <VListItemTitle @click="loadTables(db)" class="text-body-2">{{ db }}</VListItemTitle>
         </VListItem>
       </VList>
       <div v-else class="text-center mt-10">
         <VProgressCircular size="100" width="2" indeterminate color="primary" />
         <p class="font-weight-light text-body-2 mt-5">Loading databases...</p>
       </div>
+      <template #append>
+        <div class="pa-1 px-2">
+          <VBtn flat class="text-none text-body-2" border block>
+            <CreateDbModal @create="refresh()" />
+            <VIcon size="16" class="mr-md-2" icon="fluent:add-24-regular" />
+            <span class="hidden-sm-and-down">Create Database</span>
+          </VBtn>
+        </div>
+      </template>
     </VNavigationDrawer>
     <VAppBar class="shadow">
       <VAppBarNavIcon @click="mainDrawer = !mainDrawer" />
@@ -84,17 +98,6 @@
         </tbody>
       </VTable>
     </VContainer>
-    <VOverlay
-      :close-on-content-click="false"
-      no-click-animation
-      persistent
-      v-model="loading"
-      absolute
-      class="d-flex align-center justify-center"
-    >
-      <VProgressCircular size="100" width="2" indeterminate color="primary" />
-      <p class="text-center mt-5">Loading...</p>
-    </VOverlay>
   </div>
 </template>
 
@@ -105,7 +108,6 @@
   const theme = useTheme();
   const loadedTables = ref<any[]>([]);
   const tableDetails = ref<TTableDetails[]>();
-  const loading = ref(true);
   const showTableDrawer = ref(false);
   const selectedDB = ref<string[]>([]);
   const mainDrawer = ref();
@@ -114,64 +116,96 @@
   const toggleTheme = () => {
     theme.global.name.value = theme.global.current.value.dark ? "light" : "dark";
   };
-  const { data: databases, pending } = await useAsyncData(
-    "databases",
-    () => useQueries().getDbs(),
-    {
-      server: false,
-      default: () => [],
-    }
-  );
-
-  watchEffect(() => {
-    loading.value = pending.value;
+  const {
+    data: databases,
+    pending,
+    refresh,
+  } = await useAsyncData("databases", () => useQueries().getDbs(), {
+    default: () => [],
+    server: false,
   });
 
   // Method used to load tables
   const loadTables = async (db: string) => {
-    try {
-      useToast().clearAll();
-      useToast().info("Loading tables...");
-      loading.value = true;
-      loadedTables.value = await useQueries().getTables(db);
-      useToast().success("Tables loaded");
-      showTableDrawer.value = true;
-      tableDetails.value = [];
-    } catch (error: any) {
-      useToast().error(error.message);
-    } finally {
-      loading.value = false;
-    }
+    loadedTables.value = await useToast().promise(
+      useQueries().getTables(db),
+      {
+        pending: "Loading tables...",
+        success: "Tables loaded",
+        error: {
+          render(err: any) {
+            return err.message;
+          },
+        },
+      },
+      { closeButton: true }
+    );
+    showTableDrawer.value = true;
+    tableDetails.value = [];
   };
   // Method used to load table details
   const loadTableDetails = async (tableName: string) => {
-    try {
-      useToast().clearAll();
-      const db = selectedDB.value[0];
-      useToast().info("Loading details...");
-      loading.value = true;
-      tableDetails.value = await useQueries().getTableDetails(db, tableName);
-      useToast().success("Details loaded");
-    } catch (error: any) {
-      useToast().error(error.message);
-    } finally {
-      loading.value = false;
-    }
+    const db = selectedDB.value[0];
+    tableDetails.value = await useToast().promise(
+      useQueries().getTableDetails(db, tableName),
+      {
+        pending: "Loading table details...",
+        success: "Table details loaded",
+        error: {
+          render(err: any) {
+            return err.message;
+          },
+        },
+      },
+      {
+        closeButton: true,
+      }
+    );
+  };
+  // Method used to delete a db
+  const deleteDb = async (db: string) => {
+    await useToast().promise(
+      useQueries().deleteDB(db),
+      {
+        pending: "Deleting database...",
+        success: {
+          render() {
+            refresh();
+            return "Database deleted";
+          },
+        },
+        error: {
+          render(err: any) {
+            return err.message;
+          },
+        },
+      },
+      {
+        closeButton: true,
+        closeOnClick: true,
+      }
+    );
   };
 
   // Method used to disconnect from database
   const disconnect = async () => {
-    try {
-      useToast().info("Disconnecting...");
-      loading.value = true;
-      useClearConnections();
-      useToast().success("Disconnected");
-      await useRouter().push("/");
-    } catch (error: any) {
-      useToast().error(error.message);
-    } finally {
-      loading.value = false;
-    }
+    useToast().promise(
+      new Promise((res) => {
+        useClearConnections();
+        useRouter().push("/");
+        res("Disconnected");
+      }),
+      {
+        pending: "Disconnecting...",
+        success: "Disconnected",
+        error: {
+          render(err: any) {
+            return err.message;
+          },
+        },
+      },
+      { closeButton: true, closeOnClick: true }
+    );
   };
 
   onMounted(async () => {
@@ -183,5 +217,3 @@
     }
   });
 </script>
-
-<style scoped></style>

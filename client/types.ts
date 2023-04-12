@@ -15,4 +15,6 @@ declare global {
     null?: string;
     name?: string;
   };
+
+  type TCreateDB = { name: string };
 }

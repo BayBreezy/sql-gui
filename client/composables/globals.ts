@@ -66,6 +66,39 @@ export const useQueries = () => {
     return res.map((r) => r.Database);
   };
 
+  /**
+   * Method used to create a db
+   * @param db - the db name
+   */
+  const createDb = async (db: string) => {
+    const connectionData = useGetConnections();
+    if (!connectionData) return [];
+    const res = await apiClient<any[]>("/sql/query", {
+      method: "POST",
+      body: {
+        ...connectionData,
+        query: `CREATE DATABASE ${db};`,
+      },
+    });
+    return res;
+  };
+  /**
+   * Method used to delete a db
+   * @param db - the db name
+   */
+  const deleteDB = async (db: string) => {
+    const connectionData = useGetConnections();
+    if (!connectionData) return [];
+    const res = await apiClient<any[]>("/sql/query", {
+      method: "POST",
+      body: {
+        ...connectionData,
+        query: `DROP DATABASE ${db};`,
+      },
+    });
+    return res;
+  };
+
   const getTables = async (db: string) => {
     const connectionData = useGetConnections();
     if (!connectionData) return [];
@@ -127,5 +160,5 @@ export const useQueries = () => {
         }) as TTableDetails[]);
   };
 
-  return { getDbs, getTables, getTableDetails };
+  return { getDbs, getTables, getTableDetails, createDb, deleteDB };
 };
